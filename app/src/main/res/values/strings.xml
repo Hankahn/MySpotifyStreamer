@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Spotify Streamer</string>
+
+    <!-- Activity Title -->
+    <string name="title_activity_top_ten_tracks">Top 10 Tracks</string>
+
+    <!-- Menu Strings -->
+    <string name="action_settings">Settings</string>
+
+    <string name="search_hint">Enter an artist to search</string>
+    <string name="search_must_enter_terms">You must enter an artist name</string>
+    <string name="search_failed">Artist search failed?!</string>
+    <string name="results_found_pre">Results found: </string>
+    <string name="results_found_post">!</string>
+    <string name="results_found_none">No results found</string>
+    <string name="button_clear_description">Button to clear the artist search field</string>
+    <string name="imageview_artist_description">Image for the artist</string>
+    <string name="imageview_album_description">Image for the album the song appears on</string>
+
+</resources>
