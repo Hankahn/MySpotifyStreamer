@@ -12,7 +12,7 @@
     <string name="search_failed">Artist search failed?!</string>
     <string name="results_found_pre">Results found: </string>
     <string name="results_found_post">!</string>
-    <string name="results_found_none">No results found</string>
+    <string name="results_found_none">No artists found. Please refine your search and try again.</string>
     <string name="button_clear_description">Button to clear the artist search field</string>
     <string name="imageview_artist_description">Image for the artist</string>
     <string name="imageview_album_description">Image for the album the song appears on</string>
