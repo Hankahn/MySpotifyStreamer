@@ -10,6 +10,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -156,31 +157,39 @@ public class TopTenTracksActivityFragment extends Fragment {
     // AsyncTask for pulling Top Tracks for an artist
     private class SongGetTask extends AsyncTask<String, Void, ArrayList<SongHelper>> {
 
+        private final String LOG_TAG = SongGetTask.class.getSimpleName();
+        private boolean wasCancelled = false;
+
         @Override
         protected ArrayList<SongHelper> doInBackground(String... params) {
-            SpotifyApi api = new SpotifyApi();
-            SpotifyService spotify = api.getService();
-
             ArrayList<SongHelper> songs = new ArrayList<>();
 
-            // Originally tried using getArtistTopTrack(String) but according to the forums and the
-            // Spotify documentation you need to supply the country.
-            // http://discussions.udacity.com/t/problem-getting-top-tracks-bad-request-error/20376
-            // https://developer.spotify.com/web-api/get-artists-top-tracks/
-            Map<String, Object> options = new HashMap<>();
+            if(Utils.isDeviceOnline(getActivity())) {
+                SpotifyApi api = new SpotifyApi();
+                SpotifyService spotify = api.getService();
 
-            options.put("country", Locale.getDefault().getCountry());
+                // Originally tried using getArtistTopTrack(String) but according to the forums and the
+                // Spotify documentation you need to supply the country.
+                // http://discussions.udacity.com/t/problem-getting-top-tracks-bad-request-error/20376
+                // https://developer.spotify.com/web-api/get-artists-top-tracks/
+                Map<String, Object> options = new HashMap<>();
 
-            Tracks tracks = spotify.getArtistTopTrack(params[0], options);
+                options.put("country", Locale.getDefault().getCountry());
 
-            for(Track t : tracks.tracks) {
-                String albumImageUrl = "";
+                Tracks tracks = spotify.getArtistTopTrack(params[0], options);
 
-                if(t.album.images.size() > 0) {
-                    albumImageUrl = t.album.images.get(0).url;
+                for (Track t : tracks.tracks) {
+                    String albumImageUrl = "";
+
+                    if (t.album.images.size() > 0) {
+                        albumImageUrl = t.album.images.get(0).url;
+                    }
+
+                    songs.add(new SongHelper(t.id, t.name, t.album.name, albumImageUrl));
                 }
-
-                songs.add(new SongHelper(t.id, t.name, t.album.name, albumImageUrl));
+            } else {
+                Log.d(LOG_TAG, getString(R.string.message_device_not_online));
+                wasCancelled = true;
             }
 
             return songs;
@@ -188,6 +197,12 @@ public class TopTenTracksActivityFragment extends Fragment {
 
         @Override
         protected void onPostExecute(ArrayList<SongHelper> result) {
+            // The call was cancelled so get out
+            if(wasCancelled) {
+                Utils.makeToastShort(getActivity(), getString(R.string.toast_song_get_failed));
+                getActivity().finish();
+            }
+
             mSongs = result;
 
             PopulateResults();

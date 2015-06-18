@@ -207,24 +207,30 @@ public class SearchActivity extends ActionBarActivity {
     public class ArtistSearchTask extends AsyncTask<String, Void, ArrayList<ArtistHelper>> {
 
         private final String LOG_TAG = ArtistSearchTask.class.getSimpleName();
+        private boolean wasCancelled = false;
 
         @Override
         protected ArrayList<ArtistHelper> doInBackground(String... params) {
-            SpotifyApi api = new SpotifyApi();
-            SpotifyService spotify = api.getService();
-
             ArrayList<ArtistHelper> artists = new ArrayList<>();
 
-            ArtistsPager aPager = spotify.searchArtists(params[0]);
+            if(Utils.isDeviceOnline(getApplicationContext())) {
+                SpotifyApi api = new SpotifyApi();
+                SpotifyService spotify = api.getService();
 
-            for(Artist a : aPager.artists.items) {
-                String artistImageUrl = "";
+                ArtistsPager aPager = spotify.searchArtists(params[0]);
 
-                if(a.images.size() > 0) {
-                    artistImageUrl = a.images.get(0).url;
+                for (Artist a : aPager.artists.items) {
+                    String artistImageUrl = "";
+
+                    if (a.images.size() > 0) {
+                        artistImageUrl = a.images.get(0).url;
+                    }
+
+                    artists.add(new ArtistHelper(a.id, a.name, artistImageUrl));
                 }
-
-                artists.add(new ArtistHelper(a.id, a.name, artistImageUrl));
+            } else {
+                Log.d(LOG_TAG, getString(R.string.message_device_not_online));
+                wasCancelled = true;
             }
 
             return artists;
@@ -232,10 +238,16 @@ public class SearchActivity extends ActionBarActivity {
 
         @Override
         protected void onPostExecute(ArrayList<ArtistHelper> result) {
+            // The call was cancelled so get out
+            if(wasCancelled) {
+                Utils.makeToastShort(getApplicationContext(), getString(R.string.toast_artist_search_failed_retry));
+                return;
+            }
+
             if(result != null) {
                 if(result.size() > 0) {
-                    Utils.makeToastShort(getApplicationContext(), getResources()
-                            .getString(R.string.results_found_pre) + result.size() + getResources()
+                    Utils.makeToastShort(getApplicationContext(),
+                            getString(R.string.results_found_pre) + result.size() + getResources()
                             .getString(R.string.results_found_post));
                 } else {
                     Utils.makeToastShort(getApplicationContext(), getResources().getString(R.string.results_found_none));
