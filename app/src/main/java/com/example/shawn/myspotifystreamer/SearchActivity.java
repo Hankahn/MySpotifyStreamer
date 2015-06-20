@@ -31,6 +31,7 @@ import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
+import retrofit.RetrofitError;
 
 // Main activity for app responsible for searching for Artists
 public class SearchActivity extends ActionBarActivity {
@@ -204,63 +205,51 @@ public class SearchActivity extends ActionBarActivity {
     }
 
     // AsyncTask for pulling Artists by supplied search terms
-    public class ArtistSearchTask extends AsyncTask<String, Void, ArrayList<ArtistHelper>> {
+    public class ArtistSearchTask extends AsyncTask<String, Void, ArtistsPager> {
 
         private final String LOG_TAG = ArtistSearchTask.class.getSimpleName();
-        private boolean wasCancelled = false;
 
         @Override
-        protected ArrayList<ArtistHelper> doInBackground(String... params) {
-            ArrayList<ArtistHelper> artists = new ArrayList<>();
+        protected ArtistsPager doInBackground(String... params) {
+            SpotifyApi api = new SpotifyApi();
+            SpotifyService spotify = api.getService();
 
-            if(Utils.isDeviceOnline(getApplicationContext())) {
-                SpotifyApi api = new SpotifyApi();
-                SpotifyService spotify = api.getService();
-
-                ArtistsPager aPager = spotify.searchArtists(params[0]);
-
-                for (Artist a : aPager.artists.items) {
-                    String artistImageUrl = "";
-
-                    if (a.images.size() > 0) {
-                        artistImageUrl = a.images.get(0).url;
-                    }
-
-                    artists.add(new ArtistHelper(a.id, a.name, artistImageUrl));
-                }
-            } else {
-                Log.d(LOG_TAG, getString(R.string.message_device_not_online));
-                wasCancelled = true;
+            try {
+                return spotify.searchArtists(params[0]);
+            } catch (RetrofitError rError) {
+                Log.d(LOG_TAG, getString(R.string.error_spotify_artist_search_failed) + rError.toString());
+                return null;
             }
-
-            return artists;
         }
 
         @Override
-        protected void onPostExecute(ArrayList<ArtistHelper> result) {
-            // The call was cancelled so get out
-            if(wasCancelled) {
+        protected void onPostExecute(ArtistsPager result) {
+            if(result == null) {
                 Utils.makeToastShort(getApplicationContext(), getString(R.string.toast_artist_search_failed_retry));
                 return;
             }
 
-            if(result != null) {
-                if(result.size() > 0) {
-                    Utils.makeToastShort(getApplicationContext(),
-                            getString(R.string.results_found_pre) + result.size() + getResources()
-                            .getString(R.string.results_found_post));
-                } else {
-                    Utils.makeToastShort(getApplicationContext(), getResources().getString(R.string.results_found_none));
+            mArtists = new ArrayList<>();
+
+            for (Artist a : result.artists.items) {
+                String artistImageUrl = "";
+
+                if (a.images.size() > 0) {
+                    artistImageUrl = a.images.get(0).url;
                 }
 
-                mArtists = result;
-
-                PopulateResults();
-
-                Log.v(LOG_TAG, getResources().getString(R.string.results_found_pre) + result.size());
-            } else {
-                Log.v(LOG_TAG, getResources().getString(R.string.search_failed));
+                mArtists.add(new ArtistHelper(a.id, a.name, artistImageUrl));
             }
+
+            if(mArtists.size() > 0) {
+                Utils.makeToastShort(getApplicationContext(),
+                        getString(R.string.results_found_pre) + mArtists.size() + getResources()
+                        .getString(R.string.results_found_post));
+            } else {
+                Utils.makeToastShort(getApplicationContext(), getResources().getString(R.string.results_found_none));
+            }
+
+            PopulateResults();
         }
     }
 

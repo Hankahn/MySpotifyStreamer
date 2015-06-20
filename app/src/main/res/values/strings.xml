@@ -9,7 +9,6 @@
 
     <string name="search_hint">Enter an artist to search</string>
     <string name="search_must_enter_terms">You must enter an artist name</string>
-    <string name="search_failed">Artist search failed?!</string>
     <string name="results_found_pre">Results found: </string>
     <string name="results_found_post">!</string>
     <string name="results_found_none">No artists found. Please refine your search and try again.</string>
@@ -17,7 +16,9 @@
     <string name="imageview_artist_description">Image for the artist</string>
     <string name="imageview_album_description">Image for the album the song appears on</string>
     <string name="toast_artist_search_failed_retry">Artist search failed. Make sure you are online. Please try again.</string>
-    <string name="message_device_not_online">Device not online</string>
     <string name="toast_song_get_failed">Unable to retrieve the tracks for this artist. Make sure you are online. Please try again.</string>
+    <string name="error_spotify_artist_search_failed">Spotify call to searchArtists failed: </string>
+    <string name="error_spotify_song_get_failed">Spotify call to getArtisTopTrack failed: </string>
+    <string name="message_no_tracks_found_for_artist">No songs found for this artist</string>
 
 </resources>

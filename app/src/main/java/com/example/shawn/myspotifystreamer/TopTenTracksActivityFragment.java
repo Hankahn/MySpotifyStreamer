@@ -29,6 +29,7 @@ import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
+import retrofit.RetrofitError;
 
 
 // Artivity Fragment for Top Ten Tracks of an artist
@@ -44,6 +45,10 @@ public class TopTenTracksActivityFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        String ARTIST_BUNDLE = "ARTIST_BUNDLE";
+        String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
+        String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
+
         View rootView = inflater.inflate(R.layout.fragment_top_ten_tracks, container, false);
 
         mSongListView = (RecyclerView)rootView.findViewById(R.id.recyclerview_artist_songs);
@@ -52,20 +57,16 @@ public class TopTenTracksActivityFragment extends Fragment {
         Intent sourceIntent = getActivity().getIntent();
 
         // Pull in the supplied Artist and Artist ID. Fire off a pull for the Top Track list
-        String ARTIST_BUNDLE = "ARTIST_BUNDLE";
         if(sourceIntent != null && sourceIntent.hasExtra(ARTIST_BUNDLE)) {
             Bundle artistBundle = sourceIntent.getBundleExtra(ARTIST_BUNDLE);
-
             ActionBar actionBar = ((ActionBarActivity)getActivity()).getSupportActionBar();
 
             if(actionBar != null) {
-                String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
                 actionBar.setSubtitle(artistBundle.getString(ARTIST_NAME_EXTRA));
             }
 
             SongGetTask mSongGetTask = new SongGetTask();
 
-            String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
             mSongGetTask.execute(artistBundle.getString(ARTIST_ID_EXTRA));
         }
 
@@ -155,55 +156,53 @@ public class TopTenTracksActivityFragment extends Fragment {
     }
 
     // AsyncTask for pulling Top Tracks for an artist
-    private class SongGetTask extends AsyncTask<String, Void, ArrayList<SongHelper>> {
+    private class SongGetTask extends AsyncTask<String, Void, Tracks> {
 
         private final String LOG_TAG = SongGetTask.class.getSimpleName();
-        private boolean wasCancelled = false;
 
         @Override
-        protected ArrayList<SongHelper> doInBackground(String... params) {
-            ArrayList<SongHelper> songs = new ArrayList<>();
+        protected Tracks doInBackground(String... params) {
+            SpotifyApi api = new SpotifyApi();
+            SpotifyService spotify = api.getService();
 
-            if(Utils.isDeviceOnline(getActivity())) {
-                SpotifyApi api = new SpotifyApi();
-                SpotifyService spotify = api.getService();
+            // Originally tried using getArtistTopTrack(String) but according to the forums and the
+            // Spotify documentation you need to supply the country.
+            // http://discussions.udacity.com/t/problem-getting-top-tracks-bad-request-error/20376
+            // https://developer.spotify.com/web-api/get-artists-top-tracks/
+            Map<String, Object> options = new HashMap<>();
 
-                // Originally tried using getArtistTopTrack(String) but according to the forums and the
-                // Spotify documentation you need to supply the country.
-                // http://discussions.udacity.com/t/problem-getting-top-tracks-bad-request-error/20376
-                // https://developer.spotify.com/web-api/get-artists-top-tracks/
-                Map<String, Object> options = new HashMap<>();
+            options.put("country", Locale.getDefault().getCountry());
 
-                options.put("country", Locale.getDefault().getCountry());
+            try {
+                return spotify.getArtistTopTrack(params[0], options);
+            } catch (RetrofitError rError) {
+                Log.d(LOG_TAG, getString(R.string.error_spotify_song_get_failed));
+                return null;
+            }
+        }
 
-                Tracks tracks = spotify.getArtistTopTrack(params[0], options);
+        @Override
+        protected void onPostExecute(Tracks result) {
+            if(result == null) {
+                Utils.makeToastShort(getActivity(), getString(R.string.toast_song_get_failed));
+                getActivity().finish();
+            }
 
-                for (Track t : tracks.tracks) {
+            mSongs = new ArrayList<>();
+
+            if(result.tracks.size() > 0) {
+                for (Track t : result.tracks) {
                     String albumImageUrl = "";
 
                     if (t.album.images.size() > 0) {
                         albumImageUrl = t.album.images.get(0).url;
                     }
 
-                    songs.add(new SongHelper(t.id, t.name, t.album.name, albumImageUrl));
+                    mSongs.add(new SongHelper(t.id, t.name, t.album.name, albumImageUrl));
                 }
             } else {
-                Log.d(LOG_TAG, getString(R.string.message_device_not_online));
-                wasCancelled = true;
+                Utils.makeToastShort(getActivity(), getString(R.string.message_no_tracks_found_for_artist));
             }
-
-            return songs;
-        }
-
-        @Override
-        protected void onPostExecute(ArrayList<SongHelper> result) {
-            // The call was cancelled so get out
-            if(wasCancelled) {
-                Utils.makeToastShort(getActivity(), getString(R.string.toast_song_get_failed));
-                getActivity().finish();
-            }
-
-            mSongs = result;
 
             PopulateResults();
         }
