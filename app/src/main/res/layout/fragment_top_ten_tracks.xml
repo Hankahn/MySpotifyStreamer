@@ -9,7 +9,7 @@
     tools:context=".TopTenTracksActivity">
 
     <view
-        android:id="@+id/recyclerview_artist_songs"
+        android:id="@+id/recyclerview_artist_tracks"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         class="android.support.v7.widget.RecyclerView" />

@@ -14,11 +14,11 @@
     <string name="results_found_none">No artists found. Please refine your search and try again.</string>
     <string name="button_clear_description">Button to clear the artist search field</string>
     <string name="imageview_artist_description">Image for the artist</string>
-    <string name="imageview_album_description">Image for the album the song appears on</string>
+    <string name="imageview_album_description">Image for the album the track appears on</string>
     <string name="toast_artist_search_failed_retry">Artist search failed. Make sure you are online. Please try again.</string>
-    <string name="toast_song_get_failed">Unable to retrieve the tracks for this artist. Make sure you are online. Please try again.</string>
+    <string name="toast_track_get_failed">Unable to retrieve the tracks for this artist. Make sure you are online. Please try again.</string>
     <string name="error_spotify_artist_search_failed">Spotify call to searchArtists failed: </string>
-    <string name="error_spotify_song_get_failed">Spotify call to getArtisTopTrack failed: </string>
-    <string name="message_no_tracks_found_for_artist">No songs found for this artist</string>
+    <string name="error_spotify_track_get_failed">Spotify call to getArtistTopTrack failed: </string>
+    <string name="message_no_tracks_found_for_artist">No tracks found for this artist</string>
 
 </resources>

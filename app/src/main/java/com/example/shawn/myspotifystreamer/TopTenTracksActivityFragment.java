@@ -35,8 +35,9 @@ import retrofit.RetrofitError;
 // Artivity Fragment for Top Ten Tracks of an artist
 public class TopTenTracksActivityFragment extends Fragment {
 
-    private RecyclerView mSongListView;
-    private ArrayList<SongHelper> mSongs;
+    private final String TRACK_LIST = "trackList";
+    private RecyclerView mTrackListView;
+    private ArrayList<TrackHelper> mTracks;
 
     public TopTenTracksActivityFragment() {
         setHasOptionsMenu(true);
@@ -51,54 +52,67 @@ public class TopTenTracksActivityFragment extends Fragment {
 
         View rootView = inflater.inflate(R.layout.fragment_top_ten_tracks, container, false);
 
-        mSongListView = (RecyclerView)rootView.findViewById(R.id.recyclerview_artist_songs);
-        mSongListView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        mTrackListView = (RecyclerView)rootView.findViewById(R.id.recyclerview_artist_tracks);
+        mTrackListView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         Intent sourceIntent = getActivity().getIntent();
 
-        // Pull in the supplied Artist and Artist ID. Fire off a pull for the Top Track list
-        if(sourceIntent != null && sourceIntent.hasExtra(ARTIST_BUNDLE)) {
-            Bundle artistBundle = sourceIntent.getBundleExtra(ARTIST_BUNDLE);
-            ActionBar actionBar = ((ActionBarActivity)getActivity()).getSupportActionBar();
+        // Check to see if the tracks are already stored
+        if(savedInstanceState != null) {
+            mTracks = savedInstanceState.getParcelableArrayList(TRACK_LIST);
+            PopulateResults();
+        } else {
+            // Pull in the supplied Artist and Artist ID. Fire off a pull for the Top Track list
+            if (sourceIntent != null && sourceIntent.hasExtra(ARTIST_BUNDLE)) {
+                Bundle artistBundle = sourceIntent.getBundleExtra(ARTIST_BUNDLE);
+                ActionBar actionBar = ((ActionBarActivity) getActivity()).getSupportActionBar();
 
-            if(actionBar != null) {
-                actionBar.setSubtitle(artistBundle.getString(ARTIST_NAME_EXTRA));
+                if (actionBar != null) {
+                    actionBar.setSubtitle(artistBundle.getString(ARTIST_NAME_EXTRA));
+                }
+
+                GetTracksTask mGetTracksTask = new GetTracksTask();
+
+                mGetTracksTask.execute(artistBundle.getString(ARTIST_ID_EXTRA));
             }
-
-            SongGetTask mSongGetTask = new SongGetTask();
-
-            mSongGetTask.execute(artistBundle.getString(ARTIST_ID_EXTRA));
         }
 
         return rootView;
     }
 
-    // Grab the results and set the adapter
-    private void PopulateResults() {
-        RecyclerView.Adapter mSongListAdapter = new SongHelperAdapter(mSongs);
-        mSongListView.setAdapter(mSongListAdapter);
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putParcelableArrayList(TRACK_LIST, mTracks);
     }
 
-    // Adapter for Song data
-    public class SongHelperAdapter extends RecyclerView.Adapter<SongHelperAdapter.SongViewHolder> {
+    // Grab the results and set the adapter
+    private void PopulateResults() {
+        RecyclerView.Adapter mTrackListAdapter = new TrackHelperAdapter(mTracks);
+        mTrackListView.setAdapter(mTrackListAdapter);
+    }
 
-        public SongHelperAdapter(List<SongHelper> songs) {
-            mSongs = new ArrayList<>(songs);
+    // Adapter for Track data
+    public class TrackHelperAdapter extends RecyclerView.Adapter<TrackHelperAdapter.TrackViewHolder> {
+
+        public TrackHelperAdapter(List<TrackHelper> tracks) {
+            mTracks = new ArrayList<>(tracks);
         }
 
-        public class SongViewHolder extends RecyclerView.ViewHolder {// implements View.OnClickListener {
-            public final TextView mTextViewSongName;
+        public class TrackViewHolder extends RecyclerView.ViewHolder {// implements View.OnClickListener {
+            public final TextView mTextViewTrackName;
             public final TextView mTextViewAlbumName;
             public final ImageView mImageViewAlbum;
 
-            public SongViewHolder(View view) {
+            public TrackViewHolder(View view) {
                 super(view);
-                mTextViewSongName = (TextView)view.findViewById(R.id.textview_song_name);
+                mTextViewTrackName = (TextView)view.findViewById(R.id.textview_track_name);
                 mTextViewAlbumName = (TextView)view.findViewById(R.id.textview_album_name);
                 mImageViewAlbum = (ImageView)view.findViewById(R.id.imageview_album_image);
 
                 // This will be user later in Part 2
-                /*mTextViewSongName.setOnClickListener(this);
+                /*mTextViewTrackName.setOnClickListener(this);
                 mTextViewAlbumName.setOnClickListener(this);
                 mImageViewAlbum.setOnClickListener(this);*/
             }
@@ -108,7 +122,7 @@ public class TopTenTracksActivityFragment extends Fragment {
             public void onClick(View v) {
                 int index = getAdapterPosition();
 
-                SongHelper artist = mArtists.get(index);
+                TrackHelper artist = mArtists.get(index);
 
                 Bundle extras = new Bundle();
 
@@ -124,41 +138,41 @@ public class TopTenTracksActivityFragment extends Fragment {
         }
 
         @Override
-        public SongViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
+        public TrackViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
             View view = LayoutInflater.from(getActivity().getApplicationContext())
-                    .inflate(R.layout.list_item_song, (ViewGroup) viewGroup.getParent(), false);
+                    .inflate(R.layout.list_item_track, (ViewGroup) viewGroup.getParent(), false);
 
-            return new SongViewHolder(view);
+            return new TrackViewHolder(view);
         }
 
         @Override
-        public void onBindViewHolder(SongViewHolder songViewHolder, int i) {
-            String albumImageUrl = mSongs.get(i).getAlbumImageUrl();
+        public void onBindViewHolder(TrackViewHolder trackViewHolder, int i) {
+            String albumImageUrl = mTracks.get(i).getAlbumImageUrl();
 
-            songViewHolder.mTextViewSongName.setText(mSongs.get(i).getName());
-            songViewHolder.mTextViewAlbumName.setText(mSongs.get(i).getAlbumName());
+            trackViewHolder.mTextViewTrackName.setText(mTracks.get(i).getName());
+            trackViewHolder.mTextViewAlbumName.setText(mTracks.get(i).getAlbumName());
 
             if(!albumImageUrl.equals("")) {
-                Picasso.with(songViewHolder.mImageViewAlbum.getContext()).load(albumImageUrl)
+                Picasso.with(trackViewHolder.mImageViewAlbum.getContext()).load(albumImageUrl)
                         .resizeDimen(R.dimen.album_image_width, R.dimen.album_image_height)
-                        .into(songViewHolder.mImageViewAlbum);
+                        .into(trackViewHolder.mImageViewAlbum);
             } else {
-                Picasso.with(songViewHolder.mImageViewAlbum.getContext()).load(R.drawable.noimage)
+                Picasso.with(trackViewHolder.mImageViewAlbum.getContext()).load(R.drawable.noimage)
                         .resize(getResources().getDimensionPixelSize(R.dimen.artist_image_width), getResources().getDimensionPixelSize(R.dimen.album_image_height))
-                        .into(songViewHolder.mImageViewAlbum);
+                        .into(trackViewHolder.mImageViewAlbum);
             }
         }
 
         @Override
         public int getItemCount() {
-            return mSongs.size();
+            return mTracks.size();
         }
     }
 
     // AsyncTask for pulling Top Tracks for an artist
-    private class SongGetTask extends AsyncTask<String, Void, Tracks> {
+    private class GetTracksTask extends AsyncTask<String, Void, Tracks> {
 
-        private final String LOG_TAG = SongGetTask.class.getSimpleName();
+        private final String LOG_TAG = GetTracksTask.class.getSimpleName();
 
         @Override
         protected Tracks doInBackground(String... params) {
@@ -176,7 +190,7 @@ public class TopTenTracksActivityFragment extends Fragment {
             try {
                 return spotify.getArtistTopTrack(params[0], options);
             } catch (RetrofitError rError) {
-                Log.d(LOG_TAG, getString(R.string.error_spotify_song_get_failed));
+                Log.d(LOG_TAG, getString(R.string.error_spotify_track_get_failed));
                 return null;
             }
         }
@@ -184,11 +198,12 @@ public class TopTenTracksActivityFragment extends Fragment {
         @Override
         protected void onPostExecute(Tracks result) {
             if(result == null) {
-                Utils.makeToastShort(getActivity(), getString(R.string.toast_song_get_failed));
+                Utils.makeToastShort(getActivity(), getString(R.string.toast_track_get_failed));
                 getActivity().finish();
+                return;
             }
 
-            mSongs = new ArrayList<>();
+            mTracks = new ArrayList<>();
 
             if(result.tracks.size() > 0) {
                 for (Track t : result.tracks) {
@@ -198,7 +213,7 @@ public class TopTenTracksActivityFragment extends Fragment {
                         albumImageUrl = t.album.images.get(0).url;
                     }
 
-                    mSongs.add(new SongHelper(t.id, t.name, t.album.name, albumImageUrl));
+                    mTracks.add(new TrackHelper(t.id, t.name, t.album.name, albumImageUrl));
                 }
             } else {
                 Utils.makeToastShort(getActivity(), getString(R.string.message_no_tracks_found_for_artist));
@@ -208,15 +223,15 @@ public class TopTenTracksActivityFragment extends Fragment {
         }
     }
 
-    // Lightweight helper for holding Song data. Parcelable for eventual interactivity storage
-    public class SongHelper implements Parcelable {
+    // Lightweight helper for holding Track data. Parcelable for eventual interactivity storage
+    public class TrackHelper implements Parcelable {
 
         String mId;
         String mName;
         String mAlbumName;
         String mAlbumImage;
 
-        public SongHelper(String id, String name, String albumName, String imageUrl) {
+        public TrackHelper(String id, String name, String albumName, String imageUrl) {
             mId = id;
             mName = name;
             mAlbumName = albumName;
@@ -267,21 +282,21 @@ public class TopTenTracksActivityFragment extends Fragment {
             dest.writeString(mAlbumImage);
         }
 
-        public final Parcelable.Creator<SongHelper> CREATOR
-                = new Parcelable.Creator<SongHelper>() {
+        public final Parcelable.Creator<TrackHelper> CREATOR
+                = new Parcelable.Creator<TrackHelper>() {
 
             @Override
-            public SongHelper createFromParcel(Parcel source) {
+            public TrackHelper createFromParcel(Parcel source) {
                 return null;
             }
 
             @Override
-            public SongHelper[] newArray(int size) {
-                return new SongHelper[0];
+            public TrackHelper[] newArray(int size) {
+                return new TrackHelper[0];
             }
         };
 
-        private SongHelper(Parcel parcel) {
+        private TrackHelper(Parcel parcel) {
             mName = parcel.readString();
             mAlbumName = parcel.readString();
             mAlbumImage = parcel.readString();
