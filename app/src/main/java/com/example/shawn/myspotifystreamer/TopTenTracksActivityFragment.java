@@ -154,12 +154,13 @@ public class TopTenTracksActivityFragment extends Fragment {
 
             if(!albumImageUrl.equals("")) {
                 Picasso.with(trackViewHolder.mImageViewAlbum.getContext()).load(albumImageUrl)
-                        .resizeDimen(R.dimen.album_image_width, R.dimen.album_image_height)
+                        .fit()
+                        .centerCrop()
                         .into(trackViewHolder.mImageViewAlbum);
             } else {
                 Picasso.with(trackViewHolder.mImageViewAlbum.getContext()).load(R.drawable.noimage)
-                        .resize(getResources().getDimensionPixelSize(R.dimen.artist_image_width), getResources().getDimensionPixelSize(R.dimen.album_image_height))
-                        .into(trackViewHolder.mImageViewAlbum);
+                        .fit()
+                        .centerCrop().into(trackViewHolder.mImageViewAlbum);
             }
         }
 

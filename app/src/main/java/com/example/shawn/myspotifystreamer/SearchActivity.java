@@ -190,10 +190,14 @@ public class SearchActivity extends ActionBarActivity {
             artistViewHolder.mTextViewArtistName.setText(mArtists.get(i).getName());
 
             if(!artistImageUrl.equals("")) {
-                Picasso.with(artistViewHolder.mImageViewArtist.getContext()).load(artistImageUrl).resizeDimen(R.dimen.artist_image_width, R.dimen.artist_image_height).into(artistViewHolder.mImageViewArtist);
+                Picasso.with(artistViewHolder.mImageViewArtist.getContext()).load(artistImageUrl)
+                        .fit()
+                        .centerCrop()
+                        .into(artistViewHolder.mImageViewArtist);
             } else {
                 Picasso.with(artistViewHolder.mImageViewArtist.getContext()).load(R.drawable.noimage)
-                        .resize(getResources().getDimensionPixelSize(R.dimen.artist_image_width), getResources().getDimensionPixelSize(R.dimen.artist_image_height))
+                        .fit()
+                        .centerCrop()
                         .into(artistViewHolder.mImageViewArtist);
             }
         }

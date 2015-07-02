@@ -1,18 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
+    
     <!-- the theme applied to the application or activity -->
     <style name="SpotifyStreamerActionBarTheme" parent="@style/Theme.AppCompat.Light.DarkActionBar">
-        <item name="android:actionBarStyle" tools:targetApi="11">@style/SpotifyStreamerActionBar</item>
-
-        <!-- Support library compatibility -->
-        <item name="actionBarStyle">@style/SpotifyStreamerActionBar</item>
+        <item name="colorPrimary">@color/spotify_green</item>
+        <item name="colorPrimaryDark">@color/spotify_green_dark</item>
     </style>
 
-    <!-- ActionBar styles -->
-    <style name="SpotifyStreamerActionBar" parent="@style/Widget.AppCompat.Light.ActionBar.Solid.Inverse">
-        <item name="android:background">@color/spotify_green</item>
-
-        <!-- Support library compatibility -->
-        <item name="background">@color/spotify_green</item>
-    </style>
 </resources>

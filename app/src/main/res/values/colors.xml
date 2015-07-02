@@ -2,4 +2,5 @@
 <resources>
     <color name="itemBorderColor">#DDDDDD</color>
     <color name="spotify_green">#81B71A</color>
+    <color name="spotify_green_dark">#679215</color>
 </resources>
