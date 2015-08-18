@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:baselineAligned="false"
+    android:divider="?android:attr/dividerHorizontal"
+    tools:context="com.example.shawn.myspotifystreamer.SearchActivity">
+
+    <!-- Two pane layout for master/detail view -->
+
+    <fragment
+        android:id="@+id/fragment_search"
+        android:name="com.example.shawn.myspotifystreamer.SearchFragment"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        tools:layout="@layout/list_item_artist" />
+
+    <FrameLayout
+        android:id="@+id/fragment_top_ten"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="4" />
+
+</LinearLayout>

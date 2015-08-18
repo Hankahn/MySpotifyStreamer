@@ -9,6 +9,7 @@
 
     <string name="search_hint">Enter an artist to search</string>
     <string name="search_must_enter_terms">You must enter an artist name</string>
+    <string name="searching_artists">Searching Artists</string>
     <string name="results_found_pre">Results found: </string>
     <string name="results_found_post">!</string>
     <string name="results_found_none">No artists found. Please refine your search and try again.</string>
@@ -20,5 +21,7 @@
     <string name="error_spotify_artist_search_failed">Spotify call to searchArtists failed: </string>
     <string name="error_spotify_track_get_failed">Spotify call to getArtistTopTrack failed: </string>
     <string name="message_no_tracks_found_for_artist">No tracks found for this artist</string>
+    <string name="default_elapsed_text">00:00</string>
+    <string name="title_activity_player">Track Player</string>
 
 </resources>
