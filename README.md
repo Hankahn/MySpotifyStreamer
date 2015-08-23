@@ -1,2 +1,2 @@
 # MySpotifyStreamer
-Nanodegree Spotify Streamer Part 1
+Nanodegree Spotify Streamer Part 2
