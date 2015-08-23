@@ -1,6 +1,5 @@
 package com.example.shawn.myspotifystreamer;
 
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -15,6 +14,7 @@ import android.media.MediaPlayer;
 import android.os.Binder;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -22,8 +22,6 @@ import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 import java.util.ArrayList;
-
-//import android.support.v4.content.LocalBroadcastManager;
 
 /**
  * Created by Shawn on 7/8/2015.
@@ -159,7 +157,7 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
                 Thread currentThread = Thread.currentThread();
 
                 while (statusUpdateThread == currentThread) {
-                    if(mPlayer.isPlaying()) {
+                    if (mPlayer.isPlaying()) {
                         Intent intent = new Intent(INTENT_TAG)
                                 .putExtra(EVENT_TAG, TRACK_STATUS)
                                 .putExtra(POSTION_TAG, mPlayer.getCurrentPosition())
@@ -324,15 +322,15 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
     }
 
     // Creates a Notification.Action object based on the supplied action and request code
-    private Notification.Action generateAction(int icon, String title, String intentAction,
-                                               int requestCode) {
+    private NotificationCompat.Action generateAction(int icon, String title, String intentAction,
+                                                     int requestCode) {
         Intent intent = new Intent(REMOTE_INTENT_TAG)
                 .putExtra(EVENT_TAG, intentAction);
 
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, requestCode, intent,
                 PendingIntent.FLAG_CANCEL_CURRENT);
 
-        return new Notification.Action.Builder(icon, title, pendingIntent).build();
+        return new NotificationCompat.Action.Builder(icon, title, pendingIntent).build();
     }
 
     // Build the media player notification
@@ -345,41 +343,46 @@ public class PlayerService extends Service implements MediaPlayer.OnPreparedList
         boolean displayNotifications = prefs.getBoolean(displayNotificationsKey,
                 Boolean.parseBoolean(context.getString(R.string.pref_enable_notifications_default)));
 
-        if(!displayNotifications) {
+        if (!displayNotifications) {
             return;
         }
-
-        Notification.MediaStyle style = new Notification.MediaStyle();
-
-        Notification.Builder builder = new Notification.Builder(getApplicationContext())
-                .setSmallIcon(android.R.drawable.ic_media_play)
-                .setContentTitle(track.getArtistName())
-                .setContentText(track.getName())
-                .setStyle(style)
-                .setOngoing(true);
 
         Bitmap albumArt = null;
 
         try {
-            albumArt = Picasso.with(getApplicationContext()).load(track.getAlbumImage()).get();
+            albumArt = Picasso.with(getApplicationContext()).load(track.getAlbumImage())
+                    .resizeDimen(R.dimen.notification_album_image_width,
+                            R.dimen.notification_album_image_height)
+                    .get();
+
         } catch (IOException ex) {
             Log.e(LOG_TAG, getString(R.string.error_unable_to_load_album_art) + ex.toString());
         }
 
-        if(albumArt != null) {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext())
+                .setSmallIcon(android.R.drawable.ic_media_play)
+                .setContentTitle(track.getArtistName())
+                .setContentText(track.getName())
+                .setOngoing(true);
+
+        if (albumArt != null) {
             builder.setLargeIcon(albumArt);
         }
 
         builder.addAction(generateAction(android.R.drawable.ic_media_previous,
                 getString(R.string.notification_action_title_previous), REMOTE_PREVIOUS, 0));
         builder.addAction(generateAction(
-                isPlaying() ? android.R.drawable.ic_media_pause : android.R.drawable.ic_media_play,
-                getString(R.string.notification_action_title_play), REMOTE_PLAY, 1));
+                isPlaying() ? android.R.drawable.ic_media_pause :
+                        android.R.drawable.ic_media_play,
+                isPlaying() ? getString(R.string.notification_action_title_pause) :
+                        getString(R.string.notification_action_title_play),
+                REMOTE_PLAY, 1));
         builder.addAction(generateAction(android.R.drawable.ic_media_next,
                 getString(R.string.notification_action_title_next), REMOTE_NEXT, 2));
 
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
         notificationManager.notify(1, builder.build());
     }
 

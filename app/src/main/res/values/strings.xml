@@ -42,6 +42,7 @@
     <string name="error_null_share_action_provider">Share Action Provider is null?</string>
     <string name="notification_action_title_previous">Previous</string>
     <string name="notification_action_title_play">Play</string>
+    <string name="notification_action_title_pause">Pause</string>
     <string name="notification_action_title_next">Next</string>
     <string name="notification_type">text/plain</string>
     <string name="progress_dialog_title">Wait</string>
