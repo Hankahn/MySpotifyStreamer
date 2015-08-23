@@ -1,10 +1,13 @@
 package com.example.shawn.myspotifystreamer;
 
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -19,7 +22,9 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
@@ -33,12 +38,14 @@ import retrofit.RetrofitError;
  */
 public class SearchFragment extends Fragment {
 
+    final static String COUNTRY_OPTION = "country";
+
     private final String ARTIST_LIST = "artistList";
     private SearchView mArtistSearchField;
     private RecyclerView mArtistResultView;
     private ArrayList<SearchFragment.ArtistHelper> mArtists;
     private ArtistSearchTask mArtistSearchTask = null;
-    private ProgressDialog mProgressBar;
+    private ProgressDialog mProgressDialog;
 
     public SearchFragment() {
         setHasOptionsMenu(true);
@@ -71,6 +78,16 @@ public class SearchFragment extends Fragment {
         mArtistSearchField.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
+                // Clean up any remaining UI elements from the last search, this mainly comes up
+                // when using a physical keyboard and the emulator
+                if(mArtistSearchTask != null) {
+                    mArtistSearchTask.cancel(true);
+                }
+
+                if(mProgressDialog != null && mProgressDialog.isShowing()) {
+                    mProgressDialog.dismiss();
+                }
+
                 mArtistSearchTask = new ArtistSearchTask();
 
                 if (!query.isEmpty()) {
@@ -183,7 +200,18 @@ public class SearchFragment extends Fragment {
             SpotifyService spotify = api.getService();
 
             try {
-                return spotify.searchArtists(params[0]);
+                Map<String, Object> options = new HashMap<>();
+
+                Context context = getActivity();
+
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                String countryCodeKey = context.getString(R.string.pref_country_code_key);
+                String country = prefs.getString(countryCodeKey,
+                        context.getString(R.string.pref_country_code_default));
+
+                options.put(COUNTRY_OPTION, country);
+
+                return spotify.searchArtists(params[0], options);
             } catch (RetrofitError rError) {
                 Log.d(LOG_TAG, getString(R.string.error_spotify_artist_search_failed) + rError.toString());
                 return null;
@@ -193,16 +221,17 @@ public class SearchFragment extends Fragment {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            mProgressBar = ProgressDialog.show(getActivity(),
-                    "Wait", "Searching Artists...");
+            mProgressDialog = ProgressDialog.show(getActivity(),
+                    getString(R.string.progress_dialog_title), getString(R.string.progress_dialog_message));
         }
 
         @Override
         protected void onPostExecute(ArtistsPager result) {
-            mProgressBar.dismiss();
+            mProgressDialog.dismiss();
 
             if(result == null) {
-                Utils.makeToastShort(getActivity(), getString(R.string.toast_artist_search_failed_retry));
+                Utils.makeToastShort(getActivity(),
+                        getString(R.string.toast_artist_search_failed_retry));
                 return;
             }
 
@@ -228,15 +257,18 @@ public class SearchFragment extends Fragment {
 
             if(mArtists.size() > 0) {
                 Utils.makeToastShort(getActivity(),
-                        getString(R.string.results_found_pre) + mArtists.size() + getResources()
-                                .getString(R.string.results_found_post));
+                        String.format(getString(R.string.message_results_found), mArtists.size()));
             } else {
-                Utils.makeToastShort(getActivity(), getResources().getString(R.string.results_found_none));
+                Utils.makeToastShort(getActivity(), getResources().getString(R.string.message_no_results_found));
             }
 
             PopulateResults();
         }
 
+        @Override
+        protected void onCancelled() {
+            super.onCancelled();
+        }
     }
 
     // Lightweight helper for holding Artist data. Parcelable for interactivity storage

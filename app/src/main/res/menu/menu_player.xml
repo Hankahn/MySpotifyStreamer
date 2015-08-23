@@ -3,19 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.example.shawn.myspotifystreamer.TopTenTracksActivity">
 
-    <item android:id="@+id/action_now_playing"
-        android:title="@string/action_now_playing"
-        android:visible="false"
-        app:showAsAction="ifRoom" />
-
     <item android:id="@+id/action_share_track"
         android:title="@string/action_share"
         android:visible="false"
-        app:showAsAction="never" />
-
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
-        android:orderInCategory="100"
         app:showAsAction="never" />
 
 </menu>

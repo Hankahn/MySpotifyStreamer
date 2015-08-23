@@ -31,19 +31,14 @@ public class PlayerFragment extends DialogFragment {
 
     private final String LOG_TAG = PlayerFragment.class.getSimpleName();
 
-    private String TRACK_BUNDLE = "TRACK_BUNDLE";
-    private String CURRENT_TRACK_EXTRA = "CURRENT_TRACK";
-    private String TRACK_LIST_EXTRA = "TRACK_LIST";
-    private String IS_PLAYING_EXTRA = "IS_PLAYING";
-    private String IS_PAUSED_EXTRA = "IS_PAUSED";
+    private final static String TRACK_BUNDLE = "TRACK_BUNDLE";
+    private final static String CURRENT_TRACK_EXTRA = "CURRENT_TRACK";
+    private final static String TRACK_LIST_EXTRA = "TRACK_LIST";
 
-    private int mCurrentTrack = 0;
+    private int mCurrentTrack = -1;
     private ArrayList<TrackHelper> mTracks;
 
     private PlayerService mService;
-    private boolean mPlayerBound = false;
-    private boolean mIsPlaying = false;
-    private boolean mIsPaused = false;
     private Intent mIntent;
 
     private TextView mArtistNameTextView;
@@ -57,25 +52,49 @@ public class PlayerFragment extends DialogFragment {
     private TextView mElapsedText;
     private TextView mDurationText;
 
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            String event = intent.getStringExtra(PlayerService.EVENT_TAG);
+
+            switch (event) {
+                case PlayerService.TRACK_PREPARED:
+                    int duration = intent.getIntExtra(PlayerService.DURATION_TAG, 0);
+
+                    mProgressSeekBar.setMax(duration);
+                    mDurationText.setText(Utils.formatMillisecondsAsTime(duration, getString(R.string.millisecond_time_format)));
+                    break;
+                case PlayerService.TRACK_CHANGE:
+                    mCurrentTrack = intent.getIntExtra(PlayerService.TRACK_TAG, 0);
+                    updateTrack();
+                    break;
+                case PlayerService.TRACK_STATUS:
+                    if (mService != null) {
+                        if (mService.isPlaying()) {
+                            int position = intent.getIntExtra(PlayerService.POSTION_TAG, 0);
+                            mProgressSeekBar.setProgress(position);
+                            mElapsedText.setText(Utils.formatMillisecondsAsTime(position, getString(R.string.millisecond_time_format)));
+                        }
+                    }
+                    break;
+                case PlayerService.TRACK_PLAYING:
+                    mPlayButton.setImageResource(android.R.drawable.ic_media_pause);
+                    break;
+                case PlayerService.TRACK_PAUSED:
+                    mPlayButton.setImageResource(android.R.drawable.ic_media_play);
+                    break;
+            }
+        }
+    };
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver,
-                new IntentFilter("PLAYER-EVENT"));
+                new IntentFilter(PlayerService.INTENT_TAG));
     }
-
-    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            // Get extra data included in the Intent
-            String event = intent.getStringExtra("EVENT");
-            if(event == "NEXT-TRACK") {
-                nextTrack();
-                mService.playTrack();
-            }
-        }
-    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -98,27 +117,34 @@ public class PlayerFragment extends DialogFragment {
         if(savedInstanceState != null) {
             mCurrentTrack = savedInstanceState.getInt(CURRENT_TRACK_EXTRA, 0);
             mTracks = savedInstanceState.getParcelableArrayList(TRACK_LIST_EXTRA);
-            mIsPlaying = savedInstanceState.getBoolean(IS_PLAYING_EXTRA);
-            mIsPaused = savedInstanceState.getBoolean(IS_PAUSED_EXTRA);
-
-            resetSeekBar();
-            updateSeekBar();
         } else {
-            if (arguments != null) {
-                mCurrentTrack = arguments.getInt(CURRENT_TRACK_EXTRA);
-                mTracks = arguments.getParcelableArrayList(TRACK_LIST_EXTRA);
-            } else if (sourceIntent != null && sourceIntent.hasExtra(TRACK_BUNDLE)) {
+            if (sourceIntent != null && sourceIntent.hasExtra(TRACK_BUNDLE)) {
                 Bundle bundleArguments = sourceIntent.getBundleExtra(TRACK_BUNDLE);
+
                 mCurrentTrack = bundleArguments.getInt(CURRENT_TRACK_EXTRA, 0);
                 mTracks = bundleArguments.getParcelableArrayList(TRACK_LIST_EXTRA);
+            } else if (arguments != null) {
+                mCurrentTrack = arguments.getInt(CURRENT_TRACK_EXTRA);
+                mTracks = arguments.getParcelableArrayList(TRACK_LIST_EXTRA);
             }
         }
 
         mPlayButton.setOnClickListener(new View.OnClickListener() {
+
             @Override
             public void onClick(View v) {
-                playTrack();
+
+                if (mService != null) {
+                    if (mService.isPlaying()) {
+                        mService.pauseTrack();
+                    } else if (mService.isPaused()) {
+                        mService.resumeTrack();
+                    } else {
+                        mService.playTrack();
+                    }
+                }
             }
+
         });
 
         mNextButton.setOnClickListener(new View.OnClickListener() {
@@ -144,10 +170,12 @@ public class PlayerFragment extends DialogFragment {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    mService.seekPosition(progress);
+                    if (mService != null) {
+                        mService.seekPosition(progress);
+                    }
                 }
 
-                mElapsedText.setText(Utils.formatMillisecondsAsTime(progress));
+                mElapsedText.setText(Utils.formatMillisecondsAsTime(progress, getString(R.string.millisecond_time_format)));
             }
 
             @Override
@@ -178,7 +206,6 @@ public class PlayerFragment extends DialogFragment {
 
     @Override
     public void onDestroy() {
-        mProgressSeekBar.removeCallbacks(onEverySecond);
         getActivity().unbindService(playerConnection);
         mService = null;
         LocalBroadcastManager.getInstance(getActivity()).unregisterReceiver(mMessageReceiver);
@@ -192,22 +219,48 @@ public class PlayerFragment extends DialogFragment {
 
             mService = binder.getService();
 
-            mService.setTracks(mTracks);
+            // This code is run when coming back from the now playing button
+            if (mTracks == null && mService.isPlaying()) {
+                mTracks = mService.getTracks();
+                mCurrentTrack = mService.getCurrentTrack();
 
-            updateTrack();
+                int duration = mService.getDuration();
 
-            mPlayerBound = true;
+                updateTrack();
 
-            if(!mIsPlaying && !mIsPaused) {
-                playTrack();
+                mProgressSeekBar.setMax(duration);
+                mDurationText.setText(Utils.formatMillisecondsAsTime(duration, getString(R.string.millisecond_time_format)));
             }
+            // This code is run when the screen rotates
+            else if (mService.getTracks() != null && mTracks != null && mService.getCurrentTrackUrl().equals(mTracks.get(mCurrentTrack).getUrl())) {
+                int duration = mService.getDuration();
+                int position = mService.getPosition();
 
-            updatePlayButton();
+                updateTrack();
+
+                mProgressSeekBar.setMax(duration);
+                mDurationText.setText(Utils.formatMillisecondsAsTime(duration, getString(R.string.millisecond_time_format)));
+
+                if (mService.isPaused()) {
+                    mPlayButton.setImageResource(android.R.drawable.ic_media_play);
+                    mElapsedText.setText(Utils.formatMillisecondsAsTime(position, getString(R.string.millisecond_time_format)));
+                    mProgressSeekBar.setProgress(position);
+                }
+            }
+            // This code is run when a user has selected a track from the track list
+            else {
+                mService.setTracks(mTracks);
+
+                updateTrack();
+
+                mService.setCurrentTrack(mCurrentTrack);
+                mService.playTrack();
+            }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mPlayerBound = false;
+
         }
     };
 
@@ -217,8 +270,6 @@ public class PlayerFragment extends DialogFragment {
 
         outState.putInt(CURRENT_TRACK_EXTRA, mCurrentTrack);
         outState.putParcelableArrayList(TRACK_LIST_EXTRA, mTracks);
-        outState.putBoolean(IS_PLAYING_EXTRA, mIsPlaying);
-        outState.putBoolean(IS_PAUSED_EXTRA, mIsPaused);
     }
 
     @Override
@@ -230,7 +281,12 @@ public class PlayerFragment extends DialogFragment {
         return dialog;
     }
 
+    // Update the player UI based on the current tracks
     private void updateTrack() {
+        if(mTracks == null) {
+            mTracks = mService.getTracks();
+        }
+
         TrackHelper track = mTracks.get(mCurrentTrack);
 
         mArtistNameTextView.setText(track.getArtistName());
@@ -250,30 +306,7 @@ public class PlayerFragment extends DialogFragment {
         }
     }
 
-    private void playTrack() {
-        if (mService != null && !mIsPlaying) {
-            if(!mIsPaused) {
-                mService.setCurrentTrack(mCurrentTrack);
-                mService.playTrack();
-
-                updateSeekBar();
-            } else {
-                mService.resumeTrack();
-            }
-
-            mIsPlaying = true;
-            mIsPaused = false;
-
-            updatePlayButton();
-        } else {
-            mService.pauseTrack();
-            mIsPlaying = false;
-            mIsPaused = true;
-
-            updatePlayButton();
-        }
-    }
-
+    // Move the player to the next track
     private void nextTrack() {
         if(mCurrentTrack < mTracks.size() - 1) {
             mCurrentTrack++;
@@ -281,19 +314,13 @@ public class PlayerFragment extends DialogFragment {
             mCurrentTrack = 0;
         }
 
-        resetSeekBar();
+        mProgressSeekBar.setProgress(0);
+
         updateTrack();
         mService.setCurrentTrack(mCurrentTrack);
-
-        if(mIsPlaying) {
-            updateSeekBar();
-        }
-
-        if(!mService.isPlaying()) {
-            mIsPaused = false;
-        }
     }
 
+    // Move the player to the previous track
     private void previousTrack() {
         if (mCurrentTrack > 0) {
             mCurrentTrack--;
@@ -301,58 +328,8 @@ public class PlayerFragment extends DialogFragment {
             mCurrentTrack = mTracks.size() - 1;
         }
 
-        resetSeekBar();
         updateTrack();
         mService.setCurrentTrack(mCurrentTrack);
-
-        if (mIsPlaying) {
-            updateSeekBar();
-        }
-
-        if (!mService.isPlaying()) {
-            mIsPaused = false;
-        }
     }
-
-    private void updateSeekBar() {
-        mProgressSeekBar.setProgress(0);
-
-        mElapsedText.setText(getString(R.string.default_elapsed_text));
-        mDurationText.setText(getString(R.string.default_elapsed_text));
-
-        mProgressSeekBar.postDelayed(onEverySecond, 1000);
-    }
-
-    private void resetSeekBar() {
-        mProgressSeekBar.setMax(0);
-        mProgressSeekBar.setProgress(0);
-        mElapsedText.setText(getString(R.string.default_elapsed_text));
-        mDurationText.setText(getString(R.string.default_elapsed_text));
-        mProgressSeekBar.removeCallbacks(onEverySecond);
-    }
-
-    private void updatePlayButton() {
-        if(mIsPlaying) {
-            mPlayButton.setImageResource(android.R.drawable.ic_media_pause);
-        } else {
-            mPlayButton.setImageResource(android.R.drawable.ic_media_play);
-        }
-    }
-
-    private Runnable onEverySecond = new Runnable() {
-        @Override
-        public void run(){
-            if(mService != null) {
-                if(mService.isPlaying()) {
-                    mProgressSeekBar.setMax(mService.getDuration());
-                    mProgressSeekBar.setProgress(mService.getPosition());
-
-                    mDurationText.setText(Utils.formatMillisecondsAsTime(mService.getDuration()));
-                }
-            }
-
-            mProgressSeekBar.postDelayed(onEverySecond, 1000);
-        }
-    };
 
 }

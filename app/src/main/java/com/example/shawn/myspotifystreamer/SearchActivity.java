@@ -1,8 +1,12 @@
 package com.example.shawn.myspotifystreamer;
 
 import android.app.FragmentManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -13,13 +17,31 @@ import java.util.ArrayList;
 public class SearchActivity extends ActionBarActivity implements SearchFragment.Callback, TopTenTracksFragment.Callback {
 
     private static final String TOPTENTRACKSFRAGMENT_TAG = "TTTTAG";
-    String ARTIST_BUNDLE = "ARTIST_BUNDLE";
-    private String CURRENT_TRACK_EXTRA = "CURRENT_TRACK";
-    private String TRACK_LIST_EXTRA = "TRACK_LIST";
-    private String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
-    private String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
+    private final static String ARTIST_BUNDLE = "ARTIST_BUNDLE";
+    private final static String CURRENT_TRACK_EXTRA = "CURRENT_TRACK";
+    private final static String TRACK_LIST_EXTRA = "TRACK_LIST";
+    private final static String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
+    private final static String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
+    public static final String DIALOG_TAG = "dialog";
 
     private boolean mTwoPane;
+
+    private MenuItem mNowPlayingMenuItem;
+    private MenuItem mSettingsMenuItem;
+
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            String event = intent.getStringExtra(PlayerService.EVENT_TAG);
+
+            if (event.equals(PlayerService.TRACK_PLAYING)) {
+                mNowPlayingMenuItem.setVisible(true);
+            } else if (event.equals(PlayerService.TRACK_PAUSED)) {
+                mNowPlayingMenuItem.setVisible(false);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,12 +64,23 @@ public class SearchActivity extends ActionBarActivity implements SearchFragment.
         } else {
             mTwoPane = false;
         }
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(mMessageReceiver,
+                new IntentFilter(PlayerService.INTENT_TAG));
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_search, menu);
+
+        mNowPlayingMenuItem = menu.findItem(R.id.action_now_playing);
+        mSettingsMenuItem = menu.findItem(R.id.action_settings);
+
+        if (!mTwoPane) {
+            mSettingsMenuItem.setVisible(true);
+        }
+
         return true;
     }
 
@@ -58,8 +91,23 @@ public class SearchActivity extends ActionBarActivity implements SearchFragment.
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            if(!mTwoPane) {
+                startActivity(new Intent(this, SettingsActivity.class));
+                return true;
+            }
+        } else if (id == R.id.action_now_playing) {
+            if(mTwoPane) {
+                FragmentManager fragmentManager = getFragmentManager();
+                PlayerFragment newFragment = new PlayerFragment();
+
+                newFragment.show(fragmentManager, DIALOG_TAG);
+            } else {
+                Intent playerIntent = new Intent(this, PlayerActivity.class);
+
+                startActivity(playerIntent);
+            }
+
             return true;
         }
 
@@ -69,11 +117,6 @@ public class SearchActivity extends ActionBarActivity implements SearchFragment.
     @Override
     protected void onResume() {
         super.onResume();
-
-        TopTenTracksFragment df = (TopTenTracksFragment)getSupportFragmentManager().findFragmentByTag(TOPTENTRACKSFRAGMENT_TAG);
-        if ( null != df ) {
-            //df.onLocationChanged(location);
-        }
     }
 
     @Override
@@ -114,7 +157,7 @@ public class SearchActivity extends ActionBarActivity implements SearchFragment.
 
         newFragment.setArguments(arguments);
 
-        newFragment.show(fragmentManager, "dialog");
+        newFragment.show(fragmentManager, DIALOG_TAG);
     }
 
 }

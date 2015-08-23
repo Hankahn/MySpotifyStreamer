@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="countryArray">
+        <item>United States</item>
+        <item>Åland Islands</item>
+        <item>American Samoa</item>
+        <item>Andorra</item>
+        <item>Argentina</item>
+        <item>Australia</item>
+        <item>Austria</item>
+        <item>Balearic Islands</item>
+        <item>Belgium</item>
+        <item>Bermuda</item>
+        <item>Bolivia</item>
+        <item>Brazil</item>
+        <item>Bulgaria</item>
+        <item>Canada</item>
+        <item>Canary Islands</item>
+        <item>Chile</item>
+        <item>Christmas Island</item>
+        <item>Cocos (Keeling) Islands</item>
+        <item>Colombia</item>
+        <item>Cook Islands</item>
+        <item>Costa Rica</item>
+        <item>Cyprus</item>
+        <item>Czech Republic</item>
+        <item>Denmark</item>
+        <item>Dominican Republic</item>
+        <item>Ecuador</item>
+        <item>El Salvador</item>
+        <item>Estonia</item>
+        <item>Falkland Islands</item>
+        <item>Faroe Islands</item>
+        <item>Finland</item>
+        <item>France</item>
+        <item>French Polynesia</item>
+        <item>Germany</item>
+        <item>Gibraltar</item>
+        <item>Greece</item>
+        <item>Greenland</item>
+        <item>Guam</item>
+        <item>Guatemala</item>
+        <item>Guernsey</item>
+        <item>Honduras</item>
+        <item>Hong Kong</item>
+        <item>Hungary</item>
+        <item>Iceland</item>
+        <item>Ireland</item>
+        <item>Isle of Man</item>
+        <item>Italy</item>
+        <item>Jersey</item>
+        <item>Latvia</item>
+        <item>Liechtenstein</item>
+        <item>Lithuania</item>
+        <item>Luxembourg</item>
+        <item>Malaysia</item>
+        <item>Malta</item>
+        <item>Mayotte</item>
+        <item>Mexico</item>
+        <item>Monaco</item>
+        <item>Netherlands Antilles</item>
+        <item>Netherlands</item>
+        <item>New Caledonia</item>
+        <item>New Zealand</item>
+        <item>Nicaragua</item>
+        <item>Niue</item>
+        <item>Norfolk Island</item>
+        <item>Northern Mariana Islands</item>
+        <item>Norway</item>
+        <item>Panama</item>
+        <item>Paraguay</item>
+        <item>Peru</item>
+        <item>Philippines</item>
+        <item>Pitcairn Islands</item>
+        <item>Poland</item>
+        <item>Portugal</item>
+        <item>Puerto Rico</item>
+        <item>Réunion</item>
+        <item>Saint Helena, Ascension and Tristan da Cunha</item>
+        <item>Saint Pierre and Miquelon</item>
+        <item>Singapore</item>
+        <item>Sint Maarten</item>
+        <item>Slovakia</item>
+        <item>Spain</item>
+        <item>Svalbard and Jan Mayen</item>
+        <item>Sweden</item>
+        <item>Switzerland</item>
+        <item>Taiwan</item>
+        <item>Tokelau</item>
+        <item>Turkey</item>
+        <item>United Kingdom</item>
+        <item>United States Virgin Islands</item>
+        <item>Uruguay</item>
+        <item>Wallis and Futuna</item>
+    </string-array>
+    <string-array name="countryValues">
+        <item>US</item>
+        <item>AX</item>
+        <item>AS</item>
+        <item>AD</item>
+        <item>AR</item>
+        <item>AU</item>
+        <item>AT</item>
+        <item>IB</item>
+        <item>BE</item>
+        <item>BM</item>
+        <item>BO</item>
+        <item>BR</item>
+        <item>BG</item>
+        <item>CA</item>
+        <item>SP</item>
+        <item>CL</item>
+        <item>CX</item>
+        <item>CC</item>
+        <item>CO</item>
+        <item>CK</item>
+        <item>CR</item>
+        <item>CY</item>
+        <item>CZ</item>
+        <item>DK</item>
+        <item>DO</item>
+        <item>EC</item>
+        <item>SV</item>
+        <item>EE</item>
+        <item>FK</item>
+        <item>FO</item>
+        <item>FI</item>
+        <item>FR</item>
+        <item>PF</item>
+        <item>DE</item>
+        <item>GI</item>
+        <item>GR</item>
+        <item>GL</item>
+        <item>GU</item>
+        <item>GT</item>
+        <item>GG</item>
+        <item>HN</item>
+        <item>HK</item>
+        <item>HU</item>
+        <item>IS</item>
+        <item>IE</item>
+        <item>IM</item>
+        <item>IT</item>
+        <item>JE</item>
+        <item>LV</item>
+        <item>LI</item>
+        <item>LT</item>
+        <item>LU</item>
+        <item>MY</item>
+        <item>MT</item>
+        <item>YT</item>
+        <item>MX</item>
+        <item>MC</item>
+        <item>AN</item>
+        <item>NL</item>
+        <item>NC</item>
+        <item>NZ</item>
+        <item>NI</item>
+        <item>NU</item>
+        <item>NF</item>
+        <item>MP</item>
+        <item>NO</item>
+        <item>PA</item>
+        <item>PY</item>
+        <item>PE</item>
+        <item>PH</item>
+        <item>PN</item>
+        <item>PL</item>
+        <item>PT</item>
+        <item>PR</item>
+        <item>RE</item>
+        <item>SH</item>
+        <item>PM</item>
+        <item>SG</item>
+        <item>SX</item>
+        <item>SK</item>
+        <item>ES</item>
+        <item>SJ</item>
+        <item>SE</item>
+        <item>CH</item>
+        <item>TW</item>
+        <item>TK</item>
+        <item>TR</item>
+        <item>GB</item>
+        <item>VI</item>
+        <item>UY</item>
+        <item>WF</item>
+    </string-array>
+</resources>

@@ -1,15 +1,26 @@
 package com.example.shawn.myspotifystreamer;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.ShareActionProvider;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -20,7 +31,6 @@ import com.squareup.picasso.Picasso;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
@@ -34,15 +44,50 @@ import retrofit.RetrofitError;
 // Artivity Fragment for Top Ten Tracks of an artist
 public class TopTenTracksFragment extends Fragment {
 
-    String ARTIST_BUNDLE = "ARTIST_BUNDLE";
-    String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
-    String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
+    private final String LOG_TAG = TopTenTracksFragment.class.getSimpleName();
+
+    final static String ARTIST_BUNDLE = "ARTIST_BUNDLE";
+    final static String ARTIST_NAME_EXTRA = "ARTIST_NAME_EXTRA";
+    final static String ARTIST_ID_EXTRA = "ARTIST_ID_EXTRA";
+
+    final static String COUNTRY_OPTION = "country";
 
     private final String TRACK_LIST = "trackList";
     private RecyclerView mTrackListView;
     private ArrayList<TrackHelper> mTracks;
     private String mArtistId;
     private String mArtistName;
+    private String mCurrentPlayingTrackUrl = "";
+    private String mCurrentPlayingTrackName = "";
+    private String mCurrentPlayingArtistName = "";
+    private MenuItem mNowPlayingMenuItem;
+    private MenuItem mShareMenuItem;
+    private ShareActionProvider mShareActionProvider;
+
+    private BroadcastReceiver mMessageReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Get extra data included in the Intent
+            String event = intent.getStringExtra(PlayerService.EVENT_TAG);
+
+            if (event.equals(PlayerService.TRACK_PLAYING)) {
+                if(isAdded()) {
+                    mNowPlayingMenuItem.setVisible(true);
+
+                    mCurrentPlayingTrackUrl = intent.getStringExtra(PlayerService.TRACK_TAG);
+                    mCurrentPlayingTrackName = intent.getStringExtra(PlayerService.TRACK_NAME_TAG);
+                    mCurrentPlayingArtistName = intent.getStringExtra(PlayerService.TRACK_ARTIST_TAG);
+                    mShareMenuItem.setVisible(true);
+
+                    if (mShareActionProvider != null) {
+                        mShareActionProvider.setShareIntent(createShareTrackIntent());
+                    }
+                }
+            } else if (event.equals(PlayerService.TRACK_PAUSED)) {
+                mNowPlayingMenuItem.setVisible(false);
+            }
+        }
+    };
 
     public TopTenTracksFragment() {
         setHasOptionsMenu(true);
@@ -53,18 +98,18 @@ public class TopTenTracksFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_top_ten_tracks, container, false);
 
-        mTrackListView = (RecyclerView)rootView.findViewById(R.id.recyclerview_artist_tracks);
+        mTrackListView = (RecyclerView) rootView.findViewById(R.id.recyclerview_artist_tracks);
         mTrackListView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
         Bundle arguments = getArguments();
         Intent sourceIntent = getActivity().getIntent();
 
         // Check to see if the tracks are already stored
-        if(savedInstanceState != null) {
+        if (savedInstanceState != null) {
             mTracks = savedInstanceState.getParcelableArrayList(TRACK_LIST);
             mArtistId = savedInstanceState.getString(ARTIST_ID_EXTRA);
             mArtistName = savedInstanceState.getString(ARTIST_NAME_EXTRA);
-            PopulateResults();
+            populateResults();
         } else {
             // Pull in the supplied Artist and Artist ID. Fire off a pull for the Top Track list
             if (arguments != null) {
@@ -84,11 +129,14 @@ public class TopTenTracksFragment extends Fragment {
             actionBar.setSubtitle(mArtistName);
         }
 
-        if(mArtistId != null) {
+        if (mArtistId != null) {
             GetTracksTask mGetTracksTask = new GetTracksTask();
 
             mGetTracksTask.execute(mArtistId);
         }
+
+        LocalBroadcastManager.getInstance(getActivity()).registerReceiver(mMessageReceiver,
+                new IntentFilter(PlayerService.INTENT_TAG));
 
         return rootView;
     }
@@ -102,10 +150,68 @@ public class TopTenTracksFragment extends Fragment {
         outState.putString(ARTIST_NAME_EXTRA, mArtistName);
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        inflater.inflate(R.menu.menu_top_ten_tracks, menu);
+
+        mNowPlayingMenuItem = menu.findItem(R.id.action_now_playing);
+        mShareMenuItem = menu.findItem(R.id.action_share_track);
+
+        if(getActivity() != null) {
+            mShareActionProvider = new ShareActionProvider(getActivity());
+
+            MenuItemCompat.setActionProvider(mShareMenuItem, mShareActionProvider);
+
+            if (mShareActionProvider != null) {
+                mShareActionProvider.setShareIntent(createShareTrackIntent());
+            } else {
+                Log.d(LOG_TAG, getString(R.string.error_null_share_action_provider));
+            }
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+
+        if (id == android.R.id.home){
+            getActivity().finish();
+
+            return true;
+        } else if (id == R.id.action_settings) {
+            startActivity(new Intent(getActivity(), SettingsActivity.class));
+            return true;
+        } else if (id == R.id.action_now_playing) {
+            if(isAdded()) {
+                Intent playerIntent = new Intent(getActivity(), PlayerActivity.class);
+
+                startActivity(playerIntent);
+            }
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     // Grab the results and set the adapter
-    private void PopulateResults() {
+    private void populateResults() {
         RecyclerView.Adapter mTrackListAdapter = new TrackHelperAdapter(mTracks);
         mTrackListView.setAdapter(mTrackListAdapter);
+    }
+
+    // Creates a share intent
+    private Intent createShareTrackIntent() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType(getString(R.string.notification_type));
+        shareIntent.putExtra(Intent.EXTRA_TEXT, String.format(
+                getString(R.string.share_message_format),
+                mCurrentPlayingTrackName, mCurrentPlayingArtistName, mCurrentPlayingTrackUrl));
+        return shareIntent;
     }
 
     // Adapter for Track data
@@ -191,7 +297,14 @@ public class TopTenTracksFragment extends Fragment {
             // https://developer.spotify.com/web-api/get-artists-top-tracks/
             Map<String, Object> options = new HashMap<>();
 
-            options.put("country", Locale.getDefault().getCountry());
+            Context context = getActivity();
+
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+            String countryCodeKey = context.getString(R.string.pref_country_code_key);
+            String country = prefs.getString(countryCodeKey,
+                    context.getString(R.string.pref_country_code_default));
+
+            options.put(COUNTRY_OPTION, country);
 
             try {
                 return spotify.getArtistTopTrack(params[0], options);
@@ -235,7 +348,7 @@ public class TopTenTracksFragment extends Fragment {
                         getString(R.string.message_no_tracks_found_for_artist));
             }
 
-            PopulateResults();
+            populateResults();
         }
     }
 
