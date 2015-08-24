@@ -37,7 +37,10 @@ public class PlayerActivity extends ActionBarActivity {
                 mCurrentPlayingTrackUrl = intent.getStringExtra(PlayerService.TRACK_TAG);
                 mCurrentPlayingTrackName = intent.getStringExtra(PlayerService.TRACK_NAME_TAG);
                 mCurrentPlayingArtistName = intent.getStringExtra(PlayerService.TRACK_ARTIST_TAG);
-                mShareMenuItem.setVisible(true);
+
+                if(mShareMenuItem != null) {
+                    mShareMenuItem.setVisible(true);
+                }
 
                 if(mShareActionProvider != null) {
                     mShareActionProvider.setShareIntent(createShareTrackIntent());

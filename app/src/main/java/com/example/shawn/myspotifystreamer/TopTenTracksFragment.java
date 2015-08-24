@@ -129,7 +129,7 @@ public class TopTenTracksFragment extends Fragment {
             actionBar.setSubtitle(mArtistName);
         }
 
-        if (mArtistId != null) {
+        if (mTracks == null && mArtistId != null) {
             GetTracksTask mGetTracksTask = new GetTracksTask();
 
             mGetTracksTask.execute(mArtistId);

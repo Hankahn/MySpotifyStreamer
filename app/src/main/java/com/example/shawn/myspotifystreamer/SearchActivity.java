@@ -36,9 +36,13 @@ public class SearchActivity extends ActionBarActivity implements SearchFragment.
             String event = intent.getStringExtra(PlayerService.EVENT_TAG);
 
             if (event.equals(PlayerService.TRACK_PLAYING)) {
-                mNowPlayingMenuItem.setVisible(true);
+                if(mNowPlayingMenuItem != null) {
+                    mNowPlayingMenuItem.setVisible(true);
+                }
             } else if (event.equals(PlayerService.TRACK_PAUSED)) {
-                mNowPlayingMenuItem.setVisible(false);
+                if(mNowPlayingMenuItem != null) {
+                    mNowPlayingMenuItem.setVisible(false);
+                }
             }
         }
     };
